@@ -1,0 +1,178 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  create_topic:
+    image: confluentinc/cp-kafka:7.0.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: ["sh", "-c", "\
+      kafka-topics --create --topic to_ml --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 && \
+      kafka-topics --create --topic to_test --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 && \
+      kafka-topics --create --topic from_test --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 && \
+      kafka-topics --create --topic from_pl --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 && \
+      kafka-topics --create --topic from_ml --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 && \
+      kafka-topics --create --topic to_pl --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1"]
+
+  akhq:
+    image: tchiotludo/akhq
+    restart: unless-stopped
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "kafka:9092"
+              schema-registry:
+                url: "http://schema-registry:8085"
+              connect:
+                - name: "connect"
+                  url: "http://connect:8083"
+    ports:
+      - "8080:8080"
+    links:
+      - kafka
+
+  presentation:
+    build:
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/PL-Service.git#feature/chat
+    environment:
+      PORT: ":7070"
+      BROKERS: kafka
+      READER: "to_pl"
+      WRITER: "from_pl"
+      CHAT: "chat"
+    ports:
+      - "7070:7070"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  proxy:
+    build:
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Proxy-Service.git#feature/chat
+    environment:
+      PORT: ":7071"
+      CLIENT: client:7072
+      BROKERS: kafka
+      MLREADER: "from_ml"
+      PLREADER: "from_pl"
+      PLWRITER: "to_pl"
+      MLWRITER: "to_ml"
+      CHAT: "chat"
+    ports:
+      - "7071:7071"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      client:
+        condition: service_started
+
+  client:
+    build:
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Clients-Service.git#dev
+    environment:
+      PORT: ":7072"
+    ports:
+      - "7072:7072"
+
+  mongo_db:
+    image: mongo:latest
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: "metrics_writer"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: "metrics_db"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: https://github.com/AI-Hackathon-2026/Course_orchestrator.git#develop
+    env_file:
+      - ./orchestrator.env
+    ports:
+      - "8067:8067"
+    depends_on:
+      - mongo_db
+
+  graph_agent:
+    build:
+      context: https://github.com/AI-Hackathon-2026/Graph_agent.git#develop
+    env_file:
+      - ./graph_agent.env
+    ports:
+      - "6767:6767"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      orchestrator:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  test_agent:
+    build:
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Test-Agent.git#release
+    env_file:
+      - ./test_agent.env
+    ports:
+      - "8000:8000"
+
+  sandbox_environment:
+      build:
+        context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/sandbox-environment.git#release
+      env_file:
+        - ./sandbox_environment.env
+      ports:
+        - "8042:8042"
+      depends_on:
+        kafka:
+          condition: service_healthy
+        test_agent:
+          condition: service_started
+        postgres:
+          condition: service_healthy
+
+volumes:
+  mongodb_data:
+  postgres_data:

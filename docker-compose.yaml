@@ -69,6 +69,7 @@ services:
       CHAT: "chat"
     ports:
       - "7070:7070"
+      -
     depends_on:
       kafka:
         condition: service_healthy
@@ -115,7 +116,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: "metrics_db"
     ports:
-      - "5432:5432"
+      - "5431:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -128,8 +129,6 @@ services:
   orchestrator:
     build:
       context: https://github.com/AI-Hackathon-2026/Course_orchestrator.git#develop
-    env_file:
-      - ./orchestrator.env
     ports:
       - "8067:8067"
     depends_on:
@@ -152,7 +151,7 @@ services:
 
   test_agent:
     build:
-      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Test-Agent.git#release
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Test-Agent.git#main
     env_file:
       - ./test_agent.env
     ports:
@@ -160,7 +159,7 @@ services:
 
   sandbox_environment:
       build:
-        context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/sandbox-environment.git#release
+        context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/sandbox-environment.git#develop
       env_file:
         - ./sandbox_environment.env
       ports:

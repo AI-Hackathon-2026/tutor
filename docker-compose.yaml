@@ -69,7 +69,6 @@ services:
       CHAT: "chat"
     ports:
       - "7070:7070"
-      -
     depends_on:
       kafka:
         condition: service_healthy

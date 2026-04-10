@@ -150,7 +150,7 @@ services:
 
   test_agent:
     build:
-      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Test-Agent.git#main
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Test-Agent.git#develop
     env_file:
       - ./test_agent.env
     ports:

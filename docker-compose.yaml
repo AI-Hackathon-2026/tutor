@@ -59,8 +59,9 @@ services:
       - kafka
 
   presentation:
+    #image: pl:latest
     build:
-      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/PL-Service.git#feature/chat
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/PL-Service.git#dev
     environment:
       PORT: ":7070"
       BROKERS: kafka
@@ -74,8 +75,9 @@ services:
         condition: service_healthy
 
   proxy:
+    #image: proxy:latest
     build:
-      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Proxy-Service.git#feature/chat
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Proxy-Service.git#dev
     environment:
       PORT: ":7071"
       CLIENT: client:7072
@@ -97,10 +99,21 @@ services:
     build:
       context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/Clients-Service.git#dev
     environment:
-      PORT: ":7072"
+      PORT: "7072"
     ports:
       - "7072:7072"
-
+    
+  frontend:
+    build:
+      context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/frontend.git#develop
+      args:
+        VITE_API_URL: localhost:7070
+    ports:
+      - "5173:8080"
+    depends_on:
+      presentation:
+        condition: service_started
+        
   mongo_db:
     image: mongo:latest
     volumes:

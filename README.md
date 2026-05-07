@@ -40,6 +40,11 @@ git checkout develop
 docker compose up --build
 ```
 
+### 5. Открыть тьютор
+Введите в поисковую строку:
+```bash
+localhost:5173
+```
 ## Как это работает
 
 ### 1. Начало работы

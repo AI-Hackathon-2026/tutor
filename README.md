@@ -4,9 +4,41 @@
 
 ## Как запустить
 
-Склонируйте репозиторий, добавьте graph_agent.env, test_agent.env, sandbox_environment.env и общий .env с git токеном и паролем postgres.
+### 1. Подготовка репозитория
+Склонируйте проект, перейдите в рабочую директорию и переключитесь на ветку разработки:
 
-Запустите ```docker compose up```
+```bash
+git clone https://github.com/AI-Hackathon-2026/tutor.git
+cd tutor
+git checkout develop
+```
+
+### 2. Подготовка GitHub Token
+Для доступа к приватным зависимостям вам потребуется персональный токен GitHub (**PAT**).
+1. Перейдите в [GitHub Settings > Tokens](https://github.com/settings/tokens).
+2. Создайте новый токен (classic) с правами на `repo`.
+3. Сохраните его — он понадобится в следующем шаге.
+
+### 3. Настройка окружения (`.env` файлы)
+В корневой папке проекта необходимо создать несколько файлов конфигурации. Заполните их соответствующими ключами:
+
+| Файл | Ключи и параметры |
+| :--- | :--- |
+| **`.env`** | `token=<ваш_github_token>` <br> `POSTGRES_PASSWORD=<пароль>` |
+| **`graph_agent.env`** | `POSTGRES_PASSWORD=<пароль>` |
+| **`sandbox_environment.env`** | `POSTGRES_PASSWORD=<пароль>` |
+| **`test_agent.env`** | `LANGFUSE__SECRET_KEY=<key>` <br> `LANGFUSE__PUBLIC_KEY=<key>` <br> `LANGFUSE__OTEL_TIMEOUT=<timeout>` |
+| **`admin_panel.env`** | *(создайте файл пустым)* |
+
+> [!TIP]
+> Убедитесь, что пароль для PostgreSQL совпадает во всех указанных файлах для корректной связки контейнеров.
+
+### 4. Запуск приложения
+Запустите сборку и старт всех сервисов через Docker Compose:
+
+```bash
+docker compose up --build
+```
 
 ## Как это работает
 

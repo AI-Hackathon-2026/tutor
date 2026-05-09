@@ -41,5 +41,5 @@ jobs:
 
       - name: Build and restart Docker Compose stack
         run: |
-          docker compose down
+          docker compose down -v
           docker compose up -d --build

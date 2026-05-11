@@ -107,7 +107,7 @@ services:
     build:
       context: https://${token}:x-oauth-basic@github.com/AI-Hackathon-2026/frontend.git#develop
       args:
-        VITE_API_URL: localhost:7070
+        VITE_API_URL: 10.0.67.10:7070
     ports:
       - "5173:8080"
     depends_on:
